@@ -1,0 +1,94 @@
+---
+title: "GroupProject work File"
+author: "Christopher Hishmeh"
+date: "4/29/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+
+
+```{r Data Cleaning and Decomp}
+data <- read.csv("credit.csv")
+year <- c()
+for(i in 1:41){
+  year[i] <- 1980+i
+}
+year <- rep(year,12)
+year <- year[order(year)]
+
+data$date <- paste(year,data$date)
+data$date <- ym(data$date)
+
+data$date<-yearmonth(data$date)
+
+colnames(data)[2] <- "date"
+
+colnames(data)[1] <- "credit"
+
+
+data <- tsibble(data, index=date)
+
+
+holdout <- tail(data, 5)
+train <-  head(data, nrow(data)-5)
+
+data %>% 
+  model(classical_decomposition(credit, type = 'additive')) %>% 
+  components() %>% 
+  autoplot()
+autoplot(data)
+
+
+```
+
+
+
+```{r Models}
+lambda <- data %>% 
+  features(data$credit, features = guerrero) %>% 
+  pull(lambda_guerrero)
+
+data <- data %>% 
+  mutate(bc = box_cox(data$credit, lambda))
+
+
+data %>% 
+  autoplot(bc)
+data %>%
+  gg_tsdisplay(bc)
+
+fit <- train %>% 
+  model(
+    TSLM(credit~trend()),
+    arima = ARIMA(credit),
+    ets = ETS(credit),
+    nnet = NNETAR(credit)
+  )
+fit%>% 
+  forecast(h = 3, times = 0) %>% 
+  accuracy(data) %>% 
+  arrange(RMSE)
+
+fit <- data%>%
+  model(ARIMA(credit))
+
+fit %>%
+  forecast(holdout, times=100)%>%
+  autoplot(data)
+
+fit %>%
+  forecast(data)%>%
+  autoplot(data)
+gg_tsresiduals(fit)
+
+
+report(fit)
+```
+
+
