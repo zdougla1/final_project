@@ -67,7 +67,7 @@ data %>%
 
 fit <- train %>% 
   model(
-    TSLM(credit~trend()),
+    TSLM(credit~trend()+season()),
     arima = ARIMA(credit),
     ets = ETS(credit),
     nnet = NNETAR(credit)
@@ -78,7 +78,7 @@ fit%>%
   arrange(RMSE)
 
 fit <- data%>%
-  model(ARIMA(credit))
+  model(TSLM(credit~trend()+seasonn()))
 
 fit %>%
   forecast(holdout, times=100)%>%
