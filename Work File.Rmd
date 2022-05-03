@@ -37,8 +37,8 @@ colnames(data)[1] <- "credit"
 data <- tsibble(data, index=date)
 
 
-holdout <- tail(data, 5)
-train <-  head(data, nrow(data)-5)
+holdout <- tail(data, 12)
+train <-  head(data, nrow(data)-12)
 
 data %>% 
   model(classical_decomposition(credit, type = 'additive')) %>% 
